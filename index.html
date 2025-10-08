@@ -1,0 +1,89 @@
+<!doctype html>
+<!--
+  index.html
+  - Purpose: mobile-styled Home screen that matches the provided screenshot.
+  - Notes: icons and QR image are intentionally placeholders. Replace them with real assets where noted.
+  - Files: linked to `style.css` and `script.js` in the same folder.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>myGW — Scan</title>
+    <!-- Inter is used as a friendly UI font; you can swap it for your project's font. -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <!-- .screen constrains the layout to a mobile width so the page looks like your screenshot -->
+    <div class="screen">
+      <!-- Header (brand + top badge) -->
+      <header class="top">
+        <!-- top-inner constrains header content to the same width as the main blocks -->
+        <div class="top-inner">
+          <div class="brand">
+            <div class="brand-text">
+              <!-- Brand title and small subtitle (observed in the screenshot) -->
+              <div class="brand-title">myGW</div>
+              <div class="brand-sub">WE MOVE FOR YOU</div>
+            </div>
+          </div>
+          <!-- Placeholder for the top-right orange badge (icon excluded by request) -->
+          <div class="badge placeholder-orange" aria-hidden="true"></div>
+        </div>
+      </header>
+
+      <!-- Title bar (dark strip with step number + label) -->
+      <div class="title-bar"><span class="step">1.</span> Scan QR-Code</div>
+
+      <main class="main">
+        <!-- Scanner card: orange frame + inner black area where the QR would appear -->
+        <section class="scanner-card">
+          <!-- scanner-block groups orange frame and gray controls into a single rounded container -->
+          <div class="scanner-block">
+            <div class="frame">
+              <div class="inner">
+                <!-- Replace this div with an <img> or SVG of the real QR when available -->
+                <div class="qr-blank" aria-hidden="true">
+                  <!-- Video/canvas for live camera scanning. Hidden until scan starts. -->
+                  <video id="cameraPreview" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:none"></video>
+                  <canvas id="cameraCanvas" style="display:none"></canvas>
+                </div>
+                <!-- Decorative rounded white corner markers (matching the screenshot) -->
+                <span class="corner tl"></span>
+                <span class="corner tr"></span>
+                <span class="corner bl"></span>
+                <span class="corner br"></span>
+              </div>
+            </div>
+
+            <!-- Controls bar below the scanner: Scan button centered, flash square at right -->
+            <div class="controls">
+              <!-- ID `scanBtn` is used by script.js for click handling; style via .btn.scan in CSS -->
+              <button class="btn scan" id="scanBtn">Scan</button>
+              <!-- Flash square is a placeholder box; swap with an icon if/when available -->
+              <div class="flash-square" id="flashBtn" role="button" aria-pressed="false" title="Flash"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Orange-wrapped menu container with dark rounded menu items -->
+        <nav class="menu-wrap">
+          <!-- Replace text with translated strings if needed -->
+          <button class="menu-item">Documents</button>
+          <button class="menu-item">Yard</button>
+          <button class="menu-item active">QR-Code Scanner</button>
+          <button class="menu-item">Maps</button>
+        </nav>
+
+        <!-- Bottom blue pill (visual element from the screenshot). Use this for a navigation bar or CTA if you like. -->
+        <div class="bottom-area">
+          <div class="bottom-pill"></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Script adds simple interactions; expand it to integrate camera/QR library when needed -->
+    <script src="script.js"></script>
+  </body>
+</html>

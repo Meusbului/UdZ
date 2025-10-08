@@ -1,0 +1,111 @@
+/*
+  style.css
+  - Primary CSS for the mobile scanner UI.
+  - Tweak the variables below to change colors, fonts and general appearance.
+*/
+:root{
+  --bg:#000000;        /* page background */
+  --panel:#222224;     /* dark panels */
+  --card:#2b2b2b;      /* card background for menu items */
+  --accent:#ff6a00;    /* orange accent used for frame and menu wrap */
+  --muted:#bdbdbd;     /* muted/subtitle text color */
+  --blue:#2b73b8;      /* example blue used for CTAs */
+  /* responsive container size: min/max width for square blocks */
+  --container-size: clamp(240px, 92vw, 360px);
+  /* consistent side gutter used across the layout */
+  --gutter: 12px;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+}
+
+/* Reset box-sizing and page background */
+*{box-sizing:border-box}
+html,body{height:100%;}
+body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
+
+/* Screen uses full width; square blocks will size using --container-size */
+.screen{width:100%;margin:0 auto;min-height:100vh;padding:var(--gutter)}
+
+/* Header: brand on left, orange badge on right */
+.top{display:block;padding:var(--gutter) 0}
+.top-inner{width:var(--container-size);display:flex;justify-content:space-between;align-items:center;margin:0 auto}
+.brand-title{font-weight:800;font-size:22px;font-style:italic;line-height:1}
+.brand-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.badge.placeholder-orange{width:52px;height:52px;border-radius:10px;background:var(--accent)}
+
+/* Title bar (dark strip) */
+.title-bar{background:#333;margin:6px auto 12px;padding:10px var(--gutter);font-weight:800;width:var(--container-size)}
+.title-bar .step{margin-right:8px;color:#fff}
+
+/* Main area */
+.main{padding-bottom:40px}
+
+/* Scanner frame: outer orange frame, inner black scanning area */
+.scanner-card{background:transparent}
+.scanner-block{display:flex;flex-direction:column;align-items:center;width:var(--container-size);margin:12px auto;gap:0}
+/* Orange frame is a square with rounded top corners; controls sit beneath it */
+.frame{width:100%;height:var(--container-size);background:var(--accent);padding:var(--gutter);box-sizing:border-box;border-radius:12px 12px 0 0;display:flex;align-items:center;justify-content:center}
+.inner{background:#000;padding:calc(var(--gutter));border-radius:10px;position:relative;width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.qr-blank{position:relative;width:100%;height:100%;background:#000;border-radius:10px;overflow:hidden}
+
+/* make the camera preview replace the black square visually */
+#cameraPreview{
+  position: absolute;
+  /* center the square preview inside the scanner */
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  /* make it a true square (1:1) and fill the available space */
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1 / 1;
+  max-height: 100%;
+  object-fit: cover;
+  display: block;
+  z-index: 1;
+  border-radius: 10px;
+}
+/* canvas is used for decoding only; keep it hidden but give it the same rounded shape */
+#cameraCanvas{display:none;border-radius:10px}
+
+/* ensure corner guides are above the video */
+.corner{position:absolute;width:64px;height:64px;pointer-events:none;background-repeat:no-repeat;background-size:contain;z-index:2}
+
+/* Decorative corner markers: draw two rounded bars (vertical + horizontal) using pseudo elements
+  This produces smooth L-shaped corners that look less harsh than stroked rectangles. */
+.corner{position:absolute;width:64px;height:64px;pointer-events:none;background-repeat:no-repeat;background-size:contain}
+/* thicker rounded L-shape built from two filled rounded rectangles for a clean look */
+.corner{background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect x="6" y="6" width="14" height="52" rx="7" fill="%23ffffff"/><rect x="6" y="6" width="52" height="14" rx="7" fill="%23ffffff"/></svg>')}
+/* top-left */
+.corner.tl{left:12px;top:12px;transform:rotate(0deg)}
+/* top-right (rotate 90deg) */
+.corner.tr{right:12px;top:12px;transform:rotate(90deg)}
+/* bottom-right (rotate 180deg) */
+.corner.br{right:12px;bottom:12px;transform:rotate(180deg)}
+/* bottom-left (rotate 270deg) */
+.corner.bl{left:12px;bottom:12px;transform:rotate(270deg)}
+
+/* Controls bar under the scanner.
+   - Uses CSS Grid with 3 columns so we can center the Scan button (column 2)
+   - The flash square is aligned to the right (column 3)
+*/
+.controls{display:grid;grid-template-columns:1fr 1fr 68px;align-items:center;background:#3a3a3a;padding:calc(var(--gutter) + 4px);margin:0;height:86px;width:var(--container-size);border-radius:0 0 12px 12px}
+/* Center the Scan button across the content area (spanning the two main columns). */
+.btn.scan{grid-column:1 / 3;justify-self:center;background:#59a6ff;color:#fff;padding:16px 52px;border-radius:12px;border:0;font-weight:800;font-size:18px}
+.flash-square{width:52px;height:52px;background:#fff;border-radius:10px;justify-self:end}
+
+/* Menu wrapped in an orange frame as in the screenshot.
+   Menu items are dark buttons inside the orange container.
+*/
+.menu-wrap{background:var(--accent);padding:var(--gutter) 10px;border-radius:12px;margin-top:18px;width:var(--container-size);margin-left:auto;margin-right:auto;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.menu-item{display:block;width:100%;background:#333;color:#fff;padding:var(--gutter);border-radius:10px;margin-bottom:0;border:3px solid var(--card);font-weight:800;font-size:15px;text-align:left}
+.menu-item.active{border-color:var(--accent)}
+
+/* Bottom pill element — a visual bar that can be used for navigation/CTA */
+.bottom-area{display:flex;justify-content:center;margin-top:18px}
+.bottom-pill{width:var(--container-size);height:36px;background:#063a5f;border-radius:8px}
+
+/* Responsive tweak for very small screens */
+@media (max-width:380px){
+  .qr-blank{height:180px}
+}
+
