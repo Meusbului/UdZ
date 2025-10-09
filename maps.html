@@ -44,8 +44,14 @@
         // Dark tiles (CartoDB Dark Matter)
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
           maxZoom: 19,
+          detectRetina: false,
           attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO'
         }).addTo(map);
+
+        // Minor CSS tweak to reduce visible tile seams on some mobile browsers
+        var style = document.createElement('style');
+        style.innerHTML = '\n          .leaflet-tile { background-color: #111; image-rendering: -webkit-optimize-contrast; }\n          .leaflet-tile-loaded { opacity: 1; }\n        ';
+        document.head.appendChild(style);
 
         // ensure header sits above the map
         var header = document.querySelector('.top');
@@ -116,6 +122,10 @@
             navigator.geolocation.clearWatch(watchId);
             watchId = null;
           }
+          // remove markers from the map so the dot disappears
+          if(userMarker){ map.removeLayer(userMarker); userMarker = null; }
+          if(accuracyCircle){ map.removeLayer(accuracyCircle); accuracyCircle = null; }
+          if(map && map._userCentered){ delete map._userCentered; }
           statusEl.textContent = 'Location stopped';
           locateBtn.textContent = 'Locate';
         }
