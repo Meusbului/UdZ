@@ -23,7 +23,7 @@ html,body{height:100%;}
 body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
 
 /* Screen uses full width; square blocks will size using --container-size */
-.screen{width:100%;margin:0 auto;min-height:100vh;padding:var(--gutter)}
+.screen{width:100%;margin:0 auto;min-height:100vh;padding:var(--gutter) 0 0}
 
 /* Header: brand on left, orange badge on right */
 .top{display:block;padding:var(--gutter) 0}
@@ -54,14 +54,14 @@ body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
 .header-badge-link .badge.placeholder-orange{display:block;box-shadow:0 2px 6px rgba(0,0,0,0.45);border:2px solid rgba(0,0,0,0.35)}
 
 /* Title bar (dark strip) */
-.title-bar{background:#333;margin:6px auto 12px;padding:10px var(--gutter);font-weight:800;width:var(--container-size)}
+.title-bar{background:#333;margin:6px auto 12px;padding:10px var(--gutter);font-weight:800;width:var(--container-size);border-radius:8px;overflow:hidden}
 .title-bar .step{margin-right:8px;color:#fff}
 
 /* Small status bar shown under header on most pages */
 .status-bar{display:none}
 
 /* Main area */
-.main{padding-bottom:40px}
+.main{padding-bottom:12px}
 
 /* Scanner frame: outer orange frame, inner black scanning area */
 .scanner-card{background:transparent}
@@ -119,14 +119,14 @@ body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
 /* Menu wrapped in an orange frame as in the screenshot.
    Menu items are dark buttons inside the orange container.
 */
-.menu-wrap{background:var(--accent);padding:var(--gutter) 10px;border-radius:12px;margin-top:18px;width:var(--container-size);margin-left:auto;margin-right:auto;display:flex;flex-direction:column;gap:12px;overflow:auto}
+.menu-wrap{background:var(--accent);padding:var(--gutter) 10px;border-radius:12px;margin-top:12px;width:var(--container-size);margin-left:auto;margin-right:auto;display:flex;flex-direction:column;gap:12px;overflow:auto}
 .menu-item{display:block;width:100%;background:#333;color:#fff;padding:var(--gutter);border-radius:10px;margin-bottom:0;border:3px solid var(--card);font-weight:800;font-size:15px;text-align:left;text-decoration:none}
 .menu-item.active{border-color:var(--accent)}
 
 /* Bottom pill element — a visual bar that can be used for navigation/CTA */
-.bottom-area{display:flex;justify-content:center;margin-top:18px}
-.bottom-pill{width:var(--container-size);height:36px;background:#063a5f;border-radius:8px;margin-bottom:12px}
-.footer{height:12px}
+.bottom-area{display:flex;justify-content:center;margin-top:12px;margin-bottom:18px}
+.bottom-pill{width:var(--container-size);height:46px;background:#063a5f;border-radius:10px;margin:0 auto}
+.footer{height:0}
 /* Additional styles can be added here if necessary */
 
 /* Responsive tweak for very small screens */
