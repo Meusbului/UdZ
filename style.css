@@ -102,7 +102,9 @@ body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
 
 /* Bottom pill element — a visual bar that can be used for navigation/CTA */
 .bottom-area{display:flex;justify-content:center;margin-top:18px}
-.bottom-pill{width:var(--container-size);height:36px;background:#063a5f;border-radius:8px}
+.bottom-pill{width:var(--container-size);height:36px;background:#063a5f;border-radius:8px;margin-bottom:12px}
+.footer{height:12px}
+/* Additional styles can be added here if necessary */
 
 /* Responsive tweak for very small screens */
 @media (max-width:380px){
