@@ -33,8 +33,12 @@
       <button id="locateBtn" style="background:#ff6a00;color:#fff;border:none;padding:10px 12px;border-radius:10px;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,0.12);">Locate</button>
     </div>
 
-    <!-- Leaflet JS -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Leaflet JS -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Firebase (compat) - paste your config into firebaseConfig below -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function(){
         // Center roughly where the previous bbox was (lat, lon)
@@ -56,6 +60,111 @@
         // ensure header sits above the map
         var header = document.querySelector('.top');
         if(header) header.style.zIndex = 20;
+
+        // --- Realtime users (Firebase) -------------------------
+        // NOTE: Replace the firebaseConfig object below with your project's values.
+        var firebaseConfig = {
+          apiKey: "--YOUR_API_KEY--",
+          authDomain: "--YOUR_AUTH_DOMAIN--",
+          databaseURL: "--YOUR_DATABASE_URL--",
+          projectId: "--YOUR_PROJECT_ID--",
+          storageBucket: "--YOUR_STORAGE_BUCKET--",
+          messagingSenderId: "--YOUR_MESSAGING_SENDER_ID--",
+          appId: "--YOUR_APP_ID--"
+        };
+  var firebaseInitialized = false;
+  var dbRoot = null;
+  var clientId = localStorage.getItem('mgw_clientId') || null; // will prefer auth.uid once signed in
+        var displayName = localStorage.getItem('mgw_name') || '';
+        var userMarkers = {}; // markers keyed by clientId
+        var onlineCountEl = document.createElement('div');
+        onlineCountEl.style.cssText = 'position:fixed;left:12px;bottom:16px;z-index:9999;color:#fff;background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:8px;font-size:13px';
+        onlineCountEl.textContent = '';
+        document.body.appendChild(onlineCountEl);
+
+        function initFirebase(){
+          if(firebaseInitialized) return;
+          try{
+            firebase.initializeApp(firebaseConfig);
+            // sign in anonymously, then hook DB listeners
+            firebase.auth().signInAnonymously().then(function(userCred){
+              clientId = userCred && userCred.user ? userCred.user.uid : clientId;
+              if(clientId) localStorage.setItem('mgw_clientId', clientId);
+              dbRoot = firebase.database();
+              listenForLocations();
+              firebaseInitialized = true;
+            }).catch(function(err){
+              console.warn('Anonymous auth failed:', err);
+              // fallback: initialize DB listener without auth (may be rejected by rules)
+              try{ dbRoot = firebase.database(); listenForLocations(); firebaseInitialized = true; }catch(e){}
+            });
+          }catch(e){
+            console.warn('Firebase init failed', e);
+          }
+        }
+
+        function publishLocation(lat, lon, acc){
+          if(!firebaseInitialized) initFirebase();
+          if(!dbRoot || !clientId) return; // wait for auth
+          var ref = dbRoot.ref('locations/' + clientId);
+          var payload = { id: clientId, name: displayName || null, lat: lat, lon: lon, acc: acc||0, ts: Date.now() };
+          ref.set(payload).catch(function(e){ console.warn('publish failed', e); });
+        }
+
+        function removeMyLocation(){
+          if(!firebaseInitialized || !dbRoot || !clientId) return;
+          try{ dbRoot.ref('locations/' + clientId).remove(); }catch(e){}
+        }
+
+        function listenForLocations(){
+          if(!dbRoot) return;
+          var ref = dbRoot.ref('locations');
+          ref.on('child_added', onChild);
+          ref.on('child_changed', onChild);
+          ref.on('child_removed', function(snap){ var id = snap.key; if(userMarkers[id]){ map.removeLayer(userMarkers[id].marker); delete userMarkers[id]; updateOnlineCount(); } });
+
+          // also prune stale markers locally every 15s
+          setInterval(function(){
+            var now = Date.now();
+            Object.keys(userMarkers).forEach(function(id){
+              var info = userMarkers[id];
+              if(info && info.ts && (now - info.ts) > 45000){ // 45s stale
+                if(info.marker) map.removeLayer(info.marker);
+                delete userMarkers[id];
+                updateOnlineCount();
+              }
+            });
+          }, 15000);
+        }
+
+        function onChild(snap){
+          var id = snap.key;
+          var data = snap.val();
+          if(!data || !data.lat || !data.lon) return;
+          // ignore if this client (we still store self if you want)
+          var isSelf = id === clientId;
+          var latlng = [data.lat, data.lon];
+          if(userMarkers[id]){
+            userMarkers[id].ts = data.ts || Date.now();
+            userMarkers[id].marker.setLatLng(latlng);
+          }else{
+            // create a small dot marker
+            var opts = { radius: 6, color: isSelf ? '#fff' : '#ffb07a', fillColor: isSelf ? '#ff6a00' : '#ff6a00', fillOpacity: isSelf ? 0.9 : 0.9, weight: isSelf ? 2 : 1 };
+            var m = L.circleMarker(latlng, opts).addTo(map);
+            userMarkers[id] = { marker: m, ts: data.ts || Date.now(), id: id };
+          }
+          updateOnlineCount();
+        }
+
+        function updateOnlineCount(){
+          var count = Object.keys(userMarkers).length - (userMarkers[clientId] ? 1 : 0);
+          onlineCountEl.textContent = (count>0?count+' users nearby':'' );
+        }
+
+        // remove my node when leaving page
+        window.addEventListener('beforeunload', function(){ removeMyLocation(); });
+
+        // -------------------------------------------------------
 
         // Live user location marker (uses browser Geolocation API)
         var userMarker = null;
@@ -82,6 +191,7 @@
           }
           statusEl.textContent = 'Requesting location...';
           // request watchPosition on user gesture
+          var lastPublish = 0;
           watchId = navigator.geolocation.watchPosition(function(pos){
             var lat = pos.coords.latitude;
             var lon = pos.coords.longitude;
@@ -104,6 +214,11 @@
             setTimeout(()=>{ statusEl.style.background = 'rgba(0,0,0,0.6)'; }, 900);
             // pan map to user on first fix
             if(map && !map._userCentered){ map.setView([lat,lon], 16); map._userCentered = true; }
+            // publish to realtime backend (throttle to 2s)
+            try{
+              var now = Date.now();
+              if((now - lastPublish) > 1800){ publishLocation(lat, lon, acc); lastPublish = now; }
+            }catch(e){}
           }, function(err){
             // map common error codes
             if(err && err.code === 1){
@@ -126,6 +241,8 @@
           if(userMarker){ map.removeLayer(userMarker); userMarker = null; }
           if(accuracyCircle){ map.removeLayer(accuracyCircle); accuracyCircle = null; }
           if(map && map._userCentered){ delete map._userCentered; }
+          // remove from realtime backend when stopping
+          try{ removeMyLocation(); }catch(e){}
           statusEl.textContent = 'Location stopped';
           locateBtn.textContent = 'Locate';
         }
