@@ -13,44 +13,53 @@ document.addEventListener('DOMContentLoaded', ()=>{
   const flashBtn = document.getElementById('flashBtn');
   const video = document.getElementById('cameraPreview');
   const canvas = document.getElementById('cameraCanvas');
-  const ctx = canvas.getContext && canvas.getContext('2d');
+
+  let ctx = null;
+  if(canvas && canvas.getContext){
+    try{ ctx = canvas.getContext('2d'); }catch(e){ ctx = null; }
+  }
 
   let stream = null;
   let scanning = false;
   let jsQRLoaded = false;
 
-  // Simple simulated scan behavior — replace with real scanning logic later
+  // Load jsQR safely; multiple calls are OK
   async function loadJsQR(){
     if(jsQRLoaded) return;
-    // load jsQR from CDN
-    await new Promise((resolve, reject)=>{
+    return new Promise((resolve, reject)=>{
       const s = document.createElement('script');
       s.src = 'https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js';
       s.onload = ()=>{ jsQRLoaded = true; resolve(); };
-      s.onerror = reject;
+      s.onerror = ()=>{ console.warn('Failed to load jsQR'); resolve(); };
       document.head.appendChild(s);
     });
   }
 
   async function startCamera(){
+    if(!video){
+      // video element missing — cannot start camera
+      console.warn('No video element present; camera not started');
+      return;
+    }
     try{
       await loadJsQR();
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
-  video.srcObject = stream;
-  video.style.display = 'block';
+      video.srcObject = stream;
+      try{ await video.play(); }catch(e){}
+      video.style.display = 'block';
       scanning = true;
       scanBtn.textContent = 'Stop';
       requestAnimationFrame(tick);
     }catch(e){
       console.error('camera start failed', e);
-      alert('Unable to access camera: ' + (e.message || e));
+      alert('Unable to access camera: ' + (e && e.message ? e.message : e));
     }
   }
 
   function stopCamera(){
-  scanning = false;
-  scanBtn.textContent = 'Scan';
-  if(video) video.style.display = 'none';
+    scanning = false;
+    if(scanBtn) scanBtn.textContent = 'Scan';
+    if(video) video.style.display = 'none';
     if(stream){
       stream.getTracks().forEach(t=>t.stop());
       stream = null;
@@ -59,22 +68,25 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
   function tick(){
     if(!scanning) return;
+    if(!video) return;
     if(video.readyState === video.HAVE_ENOUGH_DATA){
-      // match canvas size to video
-      canvas.width = video.videoWidth;
-      canvas.height = video.videoHeight;
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      try{
-        const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
-        const code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
-        if(code){
-          // show result and stop scanning
-          stopCamera();
-          alert('QR code: ' + code.data);
-          return;
+      if(canvas && ctx){
+        canvas.width = video.videoWidth || canvas.width;
+        canvas.height = video.videoHeight || canvas.height;
+        try{
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          if(window.jsQR){
+            const imageData = ctx.getImageData(0,0,canvas.width,canvas.height);
+            const code = window.jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'attemptBoth' });
+            if(code){
+              stopCamera();
+              alert('QR code: ' + code.data);
+              return;
+            }
+          }
+        }catch(e){
+          console.warn('Frame decode error', e);
         }
-      }catch(e){
-        // ignore read errors
       }
     }
     requestAnimationFrame(tick);
@@ -82,17 +94,27 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
   if(scanBtn){
     scanBtn.addEventListener('click', ()=>{
-      if(scanning){ stopCamera(); }
-      else{ startCamera(); }
+      if(scanning) stopCamera(); else startCamera();
     });
   }
 
-  // Flash placeholder toggle — real flashlight control requires native APIs or supported browser APIs
   if(flashBtn){
-    flashBtn.addEventListener('click', ()=>{
+    flashBtn.addEventListener('click', async ()=>{
       const pressed = flashBtn.getAttribute('aria-pressed') === 'true';
       flashBtn.setAttribute('aria-pressed', String(!pressed));
       flashBtn.style.boxShadow = !pressed ? '0 0 0 3px rgba(0,0,0,0.08) inset' : '';
+      // Try toggling torch if supported
+      try{
+        if(stream){
+          const [track] = stream.getVideoTracks();
+          const capabilities = track.getCapabilities && track.getCapabilities();
+          if(capabilities && capabilities.torch){
+            await track.applyConstraints({ advanced: [{ torch: !pressed }] });
+          }
+        }
+      }catch(e){
+        // ignore if not supported
+      }
     });
   }
 });
