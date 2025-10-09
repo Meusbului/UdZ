@@ -28,6 +28,10 @@
 
     <!-- Fullscreen interactive map (Leaflet) - header stays above -->
     <div id="map" style="position:fixed;inset:0;z-index:0"></div>
+    <!-- Locate control: appears above the map in the top-right corner -->
+    <div id="locateControl" style="position:fixed;right:12px;top:82px;z-index:30;">
+      <button id="locateBtn" style="background:#ff6a00;color:#fff;border:none;padding:10px 12px;border-radius:10px;font-weight:600;box-shadow:0 6px 18px rgba(0,0,0,0.12);">Locate</button>
+    </div>
 
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -57,9 +61,22 @@
   statusEl.textContent = '';
   document.body.appendChild(statusEl);
 
-        if(navigator.geolocation){
-          statusEl.textContent = 'Locating...';
-          var watchId = navigator.geolocation.watchPosition(function(pos){
+        var watchId = null;
+        var locateBtn = document.getElementById('locateBtn');
+        function isInAppBrowser(){
+          // simple heuristic for in-app browsers
+          var ua = navigator.userAgent || '';
+          return (/FBAN|FBAV|Instagram|Line|KAKAOTALK|WhatsApp/i).test(ua);
+        }
+
+        function startWatching(){
+          if(!navigator.geolocation){
+            statusEl.textContent = 'Geolocation unsupported';
+            return;
+          }
+          statusEl.textContent = 'Requesting location...';
+          // request watchPosition on user gesture
+          watchId = navigator.geolocation.watchPosition(function(pos){
             var lat = pos.coords.latitude;
             var lon = pos.coords.longitude;
             var acc = pos.coords.accuracy || 0;
@@ -79,12 +96,38 @@
             // briefly highlight the toast
             statusEl.style.background = 'rgba(255,106,0,0.95)';
             setTimeout(()=>{ statusEl.style.background = 'rgba(0,0,0,0.6)'; }, 900);
+            // pan map to user on first fix
+            if(map && !map._userCentered){ map.setView([lat,lon], 16); map._userCentered = true; }
           }, function(err){
-            statusEl.textContent = 'Location unavailable';
+            // map common error codes
+            if(err && err.code === 1){
+              statusEl.textContent = 'Permission denied. Open this page in Safari and allow location.';
+            }else if(err && err.code === 3){
+              statusEl.textContent = 'Location request timed out.';
+            }else{
+              statusEl.textContent = 'Location unavailable';
+            }
           }, {enableHighAccuracy:true, maximumAge:3000, timeout:10000});
-        }else{
-          // geolocation unsupported
-          if(statusEl) statusEl.textContent = 'Geolocation unsupported';
+          locateBtn.textContent = 'Stop';
+        }
+
+        function stopWatching(){
+          if(watchId !== null){
+            navigator.geolocation.clearWatch(watchId);
+            watchId = null;
+          }
+          statusEl.textContent = 'Location stopped';
+          locateBtn.textContent = 'Locate';
+        }
+
+        if(locateBtn){
+          locateBtn.addEventListener('click', function(){
+            // heuristic: in-app browsers often block permissions; warn user
+            if(isInAppBrowser()){
+              statusEl.textContent = 'If permission fails, open this page in Safari for best results.';
+            }
+            if(watchId === null) startWatching(); else stopWatching();
+          });
         }
       });
     </script>
