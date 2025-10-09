@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QR-Code Scanner - myGW</title>
+    <!-- Use Inter font to match index page branding -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="screen">
+    <header class="top">
+      <div class="top-inner">
+        <div class="brand">
+          <div class="brand-text">
+            <a href="index.html" class="brand-link">
+              <div class="brand-title">myGW</div>
+              <div class="brand-sub">WE MOVE FOR YOU</div>
+            </a>
+          </div>
+        </div>
+  <a href="index.html" class="header-badge-link" aria-label="Back to home"><span class="badge placeholder-orange" aria-hidden="true"></span></a>
+      </div>
+    </header>
+  <div class="title-bar"><span class="step">1.</span> Scan QR-Code</div>
+    <main class="main">
+      <section class="scanner-card">
+        <div class="scanner-block">
+          <div class="frame">
+            <div class="inner">
+              <div class="qr-blank" aria-hidden="true">
+                <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:#777;">
+                  <!-- Camera preview/video will appear here when scanning -->
+                  <video id="cameraPreview" autoplay playsinline muted style="display:none;width:100%;height:100%;object-fit:cover;border-radius:14px;"></video>
+                  <!-- hidden canvas used for decoding frames -->
+                  <canvas id="cameraCanvas" style="display:none; width:1px; height:1px;" aria-hidden="true"></canvas>
+                  <!-- placeholder removed to keep scanner area empty -->
+                </div>
+              </div>
+              <span class="corner tl"></span>
+              <span class="corner tr"></span>
+              <span class="corner bl"></span>
+              <span class="corner br"></span>
+            </div>
+          </div>
+          <div class="controls">
+            <button id="scanBtn" class="btn scan">Scan</button>
+            <div id="flashBtn" class="flash-square" role="button" aria-pressed="false" title="Flash"></div>
+          </div>
+        </div>
+      </section>
+
+      <div style="width:var(--container-size);margin:18px auto;">
+    <p>This page is a dedicated scanner page — add camera integration here if you like.</p>
+      </div>
+    </main>
+    <script src="script.js"></script>
+  </div>
+</body>
+</html>

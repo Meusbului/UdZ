@@ -32,9 +32,33 @@ body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
 .brand-sub{font-size:12px;color:var(--muted);margin-top:4px}
 .badge.placeholder-orange{width:52px;height:52px;border-radius:10px;background:var(--accent)}
 
+/* Back link: small orange square followed by the word Back */
+.back-link{display:inline-flex;align-items:center;gap:10px;color:inherit;text-decoration:none;font-weight:700}
+.back-link .badge{width:36px;height:36px;border-radius:8px}
+.back-link:focus,.back-link:hover{text-decoration:underline}
+
+/* header-back: place the back link in the header where the badge used to be */
+.header-back{justify-self:end}
+.header-back .badge.placeholder-orange{width:52px;height:52px;border-radius:10px}
+.header-back{color:#fff}
+
+/* Brand title acts as the Back link on inner pages */
+.brand-link{color:inherit;text-decoration:none;display:inline-block}
+.brand-link:focus{outline:3px solid rgba(255,106,0,0.25);outline-offset:3px;border-radius:6px}
+.brand-link .brand-title{display:block}
+.brand-link .brand-sub{display:block}
+
+/* Make the header badge clickable and keyboard-focusable */
+.header-badge-link{display:inline-flex;align-items:center;line-height:0;margin-left:auto;cursor:pointer;z-index:10}
+.header-badge-link:focus{outline:3px solid rgba(255,106,0,0.25);outline-offset:3px;border-radius:8px}
+.header-badge-link .badge.placeholder-orange{display:block;box-shadow:0 2px 6px rgba(0,0,0,0.45);border:2px solid rgba(0,0,0,0.35)}
+
 /* Title bar (dark strip) */
 .title-bar{background:#333;margin:6px auto 12px;padding:10px var(--gutter);font-weight:800;width:var(--container-size)}
 .title-bar .step{margin-right:8px;color:#fff}
+
+/* Small status bar shown under header on most pages */
+.status-bar{display:none}
 
 /* Main area */
 .main{padding-bottom:40px}
@@ -96,7 +120,7 @@ body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
    Menu items are dark buttons inside the orange container.
 */
 .menu-wrap{background:var(--accent);padding:var(--gutter) 10px;border-radius:12px;margin-top:18px;width:var(--container-size);margin-left:auto;margin-right:auto;display:flex;flex-direction:column;gap:12px;overflow:auto}
-.menu-item{display:block;width:100%;background:#333;color:#fff;padding:var(--gutter);border-radius:10px;margin-bottom:0;border:3px solid var(--card);font-weight:800;font-size:15px;text-align:left}
+.menu-item{display:block;width:100%;background:#333;color:#fff;padding:var(--gutter);border-radius:10px;margin-bottom:0;border:3px solid var(--card);font-weight:800;font-size:15px;text-align:left;text-decoration:none}
 .menu-item.active{border-color:var(--accent)}
 
 /* Bottom pill element — a visual bar that can be used for navigation/CTA */

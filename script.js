@@ -46,6 +46,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
       stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
       video.srcObject = stream;
       try{ await video.play(); }catch(e){}
+      // hide any placeholder overlay if present
+      const placeholder = document.getElementById('scannerPlaceholder');
+      if(placeholder) placeholder.style.display = 'none';
       video.style.display = 'block';
       scanning = true;
       scanBtn.textContent = 'Stop';
