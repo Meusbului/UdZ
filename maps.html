@@ -6,11 +6,13 @@
   <title>Maps - myGW</title>
     <!-- Use Inter font to match index page branding -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Leaflet CSS for interactive map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="screen">
-    <header class="top">
+    <header class="top" style="position:relative;z-index:20">
       <div class="top-inner">
         <div class="brand">
           <div class="brand-text">
@@ -20,16 +22,72 @@
             </a>
           </div>
         </div>
-  <a href="index.html" class="header-badge-link" aria-label="Back to home"><span class="badge placeholder-orange" aria-hidden="true"></span></a>
+        <a href="index.html" class="header-badge-link" aria-label="Back to home"><span class="badge placeholder-orange" aria-hidden="true"></span></a>
       </div>
     </header>
 
-    <main class="main">
-      <div style="width:var(--container-size);margin:18px auto;">
-    <h2>Maps</h2>
-    <p>This is a placeholder for the Maps page.</p>
-      </div>
-    </main>
+    <!-- Fullscreen interactive map (Leaflet) - header stays above -->
+    <div id="map" style="position:fixed;inset:0;z-index:0"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function(){
+        // Center roughly where the previous bbox was (lat, lon)
+        var centerLat = 47.55, centerLon = 9.725;
+  var map = L.map('map', {zoomControl:false, attributionControl:false}).setView([centerLat, centerLon], 11);
+
+        // Dark tiles (CartoDB Dark Matter)
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+          maxZoom: 19,
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; CARTO'
+        }).addTo(map);
+
+        // ensure header sits above the map
+        var header = document.querySelector('.top');
+        if(header) header.style.zIndex = 20;
+
+        // Live user location marker (uses browser Geolocation API)
+        var userMarker = null;
+        var accuracyCircle = null;
+  // bottom-right toast for location status
+  var statusEl = document.createElement('div');
+  statusEl.className = 'location-toast';
+  statusEl.style.cssText = 'position:fixed;right:12px;bottom:12px;background:rgba(0,0,0,0.6);color:#fff;padding:8px 12px;border-radius:8px;font-size:13px;z-index:9999';
+  statusEl.textContent = '';
+  document.body.appendChild(statusEl);
+
+        if(navigator.geolocation){
+          statusEl.textContent = 'Locating...';
+          var watchId = navigator.geolocation.watchPosition(function(pos){
+            var lat = pos.coords.latitude;
+            var lon = pos.coords.longitude;
+            var acc = pos.coords.accuracy || 0;
+            // add or update marker
+            if(!userMarker){
+              userMarker = L.circleMarker([lat,lon], {radius:8, color:'#ff6a00', fillColor:'#ff6a00', fillOpacity:1, weight:2}).addTo(map);
+            }else{
+              userMarker.setLatLng([lat,lon]);
+            }
+            if(!accuracyCircle){
+              accuracyCircle = L.circle([lat,lon], {radius: acc, color:'#ff6a00', weight:1, fillColor:'#ff6a00', fillOpacity:0.08}).addTo(map);
+            }else{
+              accuracyCircle.setLatLng([lat,lon]);
+              accuracyCircle.setRadius(acc);
+            }
+            statusEl.textContent = 'Location updated';
+            // briefly highlight the toast
+            statusEl.style.background = 'rgba(255,106,0,0.95)';
+            setTimeout(()=>{ statusEl.style.background = 'rgba(0,0,0,0.6)'; }, 900);
+          }, function(err){
+            statusEl.textContent = 'Location unavailable';
+          }, {enableHighAccuracy:true, maximumAge:3000, timeout:10000});
+        }else{
+          // geolocation unsupported
+          if(statusEl) statusEl.textContent = 'Geolocation unsupported';
+        }
+      });
+    </script>
   </div>
 </body>
 </html>

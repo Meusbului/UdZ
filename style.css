@@ -133,3 +133,6 @@ body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
 @media (max-width:380px){
   .qr-blank{height:180px}
 }
+
+/* Hide Leaflet attribution (tile providers often require attribution; consider moving it to the header) */
+.leaflet-control-attribution{display:none !important}
