@@ -44,16 +44,16 @@
             <div class="frame">
               <div class="inner">
                 <!-- Replace this div with an <img> or SVG of the real QR when available -->
-                    <div class="inner" style="padding: 10px 0; max-width: 350px; margin: 0 auto;">
-                      <div class="qr-blank" style="margin-bottom: 10px;" aria-hidden="true">
-                        <video id="cameraPreview" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:none"></video>
-                        <canvas id="cameraCanvas" style="display:none"></canvas>
-                      </div>
-                      <span class="corner tl"></span>
-                      <span class="corner tr"></span>
-                      <span class="corner bl"></span>
-                      <span class="corner br"></span>
-                    </div>
+                <div class="qr-blank" aria-hidden="true">
+                  <!-- Video/canvas for live camera scanning. Hidden until scan starts. -->
+                  <video id="cameraPreview" autoplay playsinline muted style="width:100%;height:100%;object-fit:cover;display:none"></video>
+                  <canvas id="cameraCanvas" style="display:none"></canvas>
+                </div>
+                <!-- Decorative rounded white corner markers (matching the screenshot) -->
+                <span class="corner tl"></span>
+                <span class="corner tr"></span>
+                <span class="corner bl"></span>
+                <span class="corner br"></span>
               </div>
             </div>
 
