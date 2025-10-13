@@ -110,7 +110,23 @@ body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
 .controls{display:grid;grid-template-columns:1fr 1fr 68px;align-items:center;background:#3a3a3a;padding:calc(var(--gutter) + 4px);margin:0;height:86px;width:var(--container-size);border-radius:0 0 12px 12px}
 /* Center the Scan button across the content area (spanning the two main columns). */
 .btn.scan{grid-column:1 / 3;justify-self:center;background:#59a6ff;color:#fff;padding:16px 52px;border-radius:12px;border:0;font-weight:800;font-size:18px}
-.flash-square{width:52px;height:52px;background:#fff;border-radius:10px;justify-self:end}
+.flash-square{
+  width:52px;height:52px;border-radius:10px;justify-self:end;
+  background-color:#fff;
+  /* use external dark icon only */
+  background-image: url('torch_dark.png');
+  background-repeat:no-repeat;background-position:center;background-size:78%;
+  box-shadow:none;display:inline-block
+}
+
+/* Active state: filled light torch on orange background */
+.flash-square[aria-pressed="true"]{
+  /* keep the white background when active; only swap the icon */
+  background-color:#fff;
+  background-image: url('torch_light.png');
+  background-repeat:no-repeat;background-position:center;background-size:78%;
+  box-shadow:none;
+}
 
 /* Disabled control visuals */
 .disabled{opacity:0.5;filter:grayscale(40%);}
