@@ -52,6 +52,12 @@ document.addEventListener('DOMContentLoaded', ()=>{
       video.style.display = 'block';
       scanning = true;
       scanBtn.textContent = 'Stop';
+      // enable flash control when camera is active
+      if(flashBtn){
+        flashBtn.classList.remove('disabled');
+        flashBtn.removeAttribute('aria-disabled');
+        flashBtn.style.pointerEvents = 'auto';
+      }
       requestAnimationFrame(tick);
     }catch(e){
       console.error('camera start failed', e);
@@ -63,6 +69,13 @@ document.addEventListener('DOMContentLoaded', ()=>{
     scanning = false;
     if(scanBtn) scanBtn.textContent = 'Scan';
     if(video) video.style.display = 'none';
+    // disable flash control when camera stops
+    if(flashBtn){
+      flashBtn.classList.add('disabled');
+      flashBtn.setAttribute('aria-disabled','true');
+      flashBtn.setAttribute('aria-pressed','false');
+      flashBtn.style.pointerEvents = 'none';
+    }
     if(stream){
       stream.getTracks().forEach(t=>t.stop());
       stream = null;
@@ -102,7 +115,14 @@ document.addEventListener('DOMContentLoaded', ()=>{
   }
 
   if(flashBtn){
+    // initially disabled until camera starts
+    flashBtn.classList.add('disabled');
+    flashBtn.setAttribute('aria-disabled','true');
+    flashBtn.style.pointerEvents = 'none';
+
     flashBtn.addEventListener('click', async ()=>{
+      // guard: only allow when scanning is active
+      if(!scanning) return;
       const pressed = flashBtn.getAttribute('aria-pressed') === 'true';
       flashBtn.setAttribute('aria-pressed', String(!pressed));
       flashBtn.style.boxShadow = !pressed ? '0 0 0 3px rgba(0,0,0,0.08) inset' : '';

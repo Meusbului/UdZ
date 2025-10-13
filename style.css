@@ -119,6 +119,12 @@ body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
   box-shadow:none;display:inline-block
 }
 
+.flash-square.disabled{
+  opacity: 0.44;
+  filter: grayscale(60%);
+  cursor: default;
+}
+
 /* Active state: filled light torch on orange background */
 .flash-square[aria-pressed="true"]{
   /* keep the white background when active; only swap the icon */
