@@ -10,7 +10,7 @@
 </head>
 <body>
   <div class="screen">
-    <header class="top">
+  <header class="top" style="position:relative;z-index:20;">
       <div class="top-inner">
         <div class="brand">
           <div class="brand-text">
@@ -20,15 +20,85 @@
             </a>
           </div>
         </div>
-  <a href="index.html" class="header-badge-link" aria-label="Back to home"><span class="badge placeholder-orange" aria-hidden="true"></span></a>
+  <a href="index.html" class="header-badge-link" aria-label="Back to home" style="z-index:30;"><span class="badge placeholder-orange" aria-hidden="true"></span></a>
       </div>
     </header>
-  <div class="title-bar"><span class="step">1.</span> Scan QR-Code</div>
+  
     <main class="main">
-      <div style="width:var(--container-size);margin:18px auto;">
-        <h2>Yard</h2>
-    <p>This is a placeholder for the Yard page.</p>
+      <!-- Fullscreen zoomable yard image. Replace 'yard.jpg' with your hi-res photo. -->
+      <div id="yard-viewer" style="position:fixed;inset:0;z-index:0;display:flex;align-items:center;justify-content:center;background:#000;padding:0;margin:0;">
+        <img id="yardImg" src="Yard.png" alt="Yard" style="max-width:none;width:100%;height:100%;object-fit:contain;touch-action:none;cursor:grab;display:block;" />
       </div>
+      <script>
+        (function(){
+          const img = document.getElementById('yardImg');
+          let scale = 1, lastScale = 1;
+          let pos = {x:0,y:0}, lastPos = {x:0,y:0};
+          let dragging = false, dragStart = {x:0,y:0};
+
+          function setTransform(){
+            img.style.transform = `translate(${pos.x}px, ${pos.y}px) scale(${scale})`;
+          }
+
+          // Mouse wheel zoom
+          window.addEventListener('wheel', function(e){
+            if(!e.ctrlKey && !e.metaKey){
+              // zoom around cursor
+              const delta = -e.deltaY * 0.0015;
+              const newScale = Math.max(1, Math.min(6, scale * (1 + delta)));
+              // adjust pos so zoom centers on cursor
+              const rect = img.getBoundingClientRect();
+              const cx = e.clientX - rect.left;
+              const cy = e.clientY - rect.top;
+              const dx = (cx - rect.width/2 - pos.x)/scale;
+              const dy = (cy - rect.height/2 - pos.y)/scale;
+              pos.x -= dx * (newScale - scale);
+              pos.y -= dy * (newScale - scale);
+              scale = newScale; setTransform();
+              e.preventDefault();
+            }
+          }, {passive:false});
+
+          // Drag to pan
+          img.addEventListener('pointerdown', function(e){
+            dragging = true; dragStart = {x: e.clientX - lastPos.x, y: e.clientY - lastPos.y}; img.style.cursor='grabbing'; img.setPointerCapture(e.pointerId);
+          });
+          img.addEventListener('pointermove', function(e){
+            if(!dragging) return; pos.x = e.clientX - dragStart.x; pos.y = e.clientY - dragStart.y; setTransform();
+          });
+          img.addEventListener('pointerup', function(e){ dragging=false; lastPos = {x:pos.x,y:pos.y}; img.style.cursor='grab'; img.releasePointerCapture(e.pointerId); });
+          img.addEventListener('pointercancel', function(e){ dragging=false; lastPos = {x:pos.x,y:pos.y}; img.style.cursor='grab'; });
+
+          // Touch pinch zoom
+          let ongoing = {};
+          img.addEventListener('touchstart', function(e){
+            if(e.touches.length===2){
+              lastScale = scale;
+              const [a,b] = e.touches; ongoing = {a:{x:a.clientX,y:a.clientY}, b:{x:b.clientX,y:b.clientY}};
+            }
+          }, {passive:true});
+          img.addEventListener('touchmove', function(e){
+            if(e.touches.length===2){
+              const a = e.touches[0], b = e.touches[1];
+              const dist = Math.hypot(a.clientX-b.clientX, a.clientY-b.clientY);
+              if(!ongoing.dist){ ongoing.dist = dist; }
+              const ratio = dist / ongoing.dist;
+              scale = Math.max(1, Math.min(6, lastScale * ratio));
+              setTransform();
+              e.preventDefault();
+            }
+          }, {passive:false});
+
+          // double-tap to reset
+          let lastTap = 0;
+          img.addEventListener('touchend', function(e){
+            const now = Date.now(); if(now - lastTap < 300){ scale = 1; pos = {x:0,y:0}; setTransform(); } lastTap = now;
+          });
+
+          // ensure image fills screen when loaded
+          img.addEventListener('load', function(){ scale=1; pos={x:0,y:0}; setTransform(); });
+        })();
+      </script>
     </main>
   </div>
 </body>
