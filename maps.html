@@ -81,6 +81,7 @@
   var markerRenderer = L.canvas({ padding: 0.5 });
   var pendingUpdates = {};
   var flushScheduled = false;
+  var docFreshThreshold = 45000; // ignore docs older than 45s on initial load
         var onlineCountEl = document.createElement('div');
         onlineCountEl.style.cssText = 'position:fixed;left:12px;bottom:16px;z-index:9999;color:#fff;background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:8px;font-size:13px';
         onlineCountEl.textContent = '';
@@ -146,9 +147,18 @@
             snapshot.docChanges().forEach(function(change){
               var id = change.doc.id;
               var data = change.doc.data();
+              // normalize timestamp (handle Firestore Timestamp objects)
+              var dataTs = data && data.ts ? (data.ts.toMillis ? data.ts.toMillis() : data.ts) : Date.now();
+              var age = Date.now() - dataTs;
               if(change.type === 'added' || change.type === 'modified'){
+                // ignore stale docs (this prevents showing old users on initial load)
+                if(age > docFreshThreshold){
+                  // treat as absent; if it was previously shown, remove it
+                  if(userMarkers[id]){ map.removeLayer(userMarkers[id].marker); delete userMarkers[id]; updateOnlineCount(); }
+                  return;
+                }
                 // batch updates to avoid many synchronous DOM/SVG operations
-                pendingUpdates[id] = { latlng: [data.lat, data.lon], ts: data.ts || Date.now(), data: data };
+                pendingUpdates[id] = { latlng: [data.lat, data.lon], ts: dataTs || Date.now(), data: data };
                 if(!flushScheduled){ flushScheduled = true; requestAnimationFrame(flushPending); }
               }else if(change.type === 'removed'){
                 if(userMarkers[id]){ map.removeLayer(userMarkers[id].marker); delete userMarkers[id]; updateOnlineCount(); }
