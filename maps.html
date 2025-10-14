@@ -82,6 +82,17 @@
         onlineCountEl.textContent = '';
         document.body.appendChild(onlineCountEl);
 
+        // Debug overlay to surface auth/errors for troubleshooting
+        var debugEl = document.createElement('div');
+        debugEl.style.cssText = 'position:fixed;left:12px;bottom:72px;z-index:9999;color:#fff;background:rgba(0,0,0,0.6);padding:8px 10px;border-radius:8px;font-size:12px;max-width:320px;line-height:1.2';
+        debugEl.id = 'mgw_debug';
+        debugEl.innerHTML = '<strong>Debug:</strong><div id="mgw_debug_state">init</div>';
+        document.body.appendChild(debugEl);
+
+        function setDebug(msg){
+          try{ document.getElementById('mgw_debug_state').textContent = String(msg); }catch(e){ console.log('dbg', msg); }
+        }
+
         function initFirebase(){
           if(firebaseInitialized) return;
           try{
@@ -90,14 +101,18 @@
             firebase.auth().signInAnonymously().then(function(userCred){
               clientId = userCred && userCred.user ? userCred.user.uid : clientId;
               if(clientId) localStorage.setItem('mgw_clientId', clientId);
+              setDebug('signed in: ' + clientId);
               firestore = firebase.firestore();
               listenForLocations();
               firebaseInitialized = true;
             }).catch(function(err){
               console.warn('Anonymous auth failed:', err);
+              setDebug('auth error: ' + (err && err.message));
               // fallback: initialize Firestore without auth (may be rejected by rules)
-              try{ firestore = firebase.firestore(); listenForLocations(); firebaseInitialized = true; }catch(e){}
+              try{ firestore = firebase.firestore(); listenForLocations(); firebaseInitialized = true; setDebug('firestore init (no auth)'); }catch(e){ setDebug('firestore init failed'); }
             });
+            // also show auth state changes
+            firebase.auth().onAuthStateChanged(function(u){ if(u){ setDebug('auth state: uid=' + u.uid); clientId = u.uid; if(clientId) localStorage.setItem('mgw_clientId', clientId); } else { setDebug('auth state: signed out'); } });
           }catch(e){
             console.warn('Firebase init failed', e);
           }
@@ -108,12 +123,12 @@
           if(!firestore || !clientId) return; // wait for auth
           var docRef = firestore.collection('locations').doc(clientId);
           var payload = { id: clientId, name: displayName || null, lat: lat, lon: lon, acc: acc||0, ts: Date.now() };
-          docRef.set(payload).catch(function(e){ console.warn('publish failed', e); });
+          docRef.set(payload).then(function(){ setDebug('published at ' + new Date().toLocaleTimeString()); }).catch(function(e){ console.warn('publish failed', e); setDebug('publish error: ' + (e && e.message)); });
         }
 
         function removeMyLocation(){
           if(!firebaseInitialized || !firestore || !clientId) return;
-          try{ firestore.collection('locations').doc(clientId).delete().catch(function(){}); }catch(e){}
+          try{ firestore.collection('locations').doc(clientId).delete().then(function(){ setDebug('removed my location'); }).catch(function(e){ setDebug('remove error: ' + (e && e.message)); }); }catch(e){ setDebug('remove exception'); }
         }
 
         function listenForLocations(){
@@ -131,7 +146,7 @@
                 if(userMarkers[id]){ map.removeLayer(userMarkers[id].marker); delete userMarkers[id]; updateOnlineCount(); }
               }
             });
-          }, function(err){ console.warn('Firestore listen error', err); });
+          }, function(err){ console.warn('Firestore listen error', err); setDebug('listen error: ' + (err && err.message)); });
 
           // also prune stale markers locally every 15s (same as before)
           setInterval(function(){
