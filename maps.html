@@ -90,8 +90,10 @@
         // Debug overlay to surface auth/errors for troubleshooting
         var debugEl = document.createElement('div');
         debugEl.style.cssText = 'position:fixed;left:12px;bottom:72px;z-index:9999;color:#fff;background:rgba(0,0,0,0.6);padding:8px 10px;border-radius:8px;font-size:12px;max-width:320px;line-height:1.2';
-        debugEl.id = 'mgw_debug';
-        debugEl.innerHTML = '<strong>Debug:</strong><div id="mgw_debug_state">init</div>';
+  debugEl.id = 'mgw_debug';
+  debugEl.innerHTML = '<strong>Debug:</strong><div id="mgw_debug_state">init</div>' +
+           '<div style="margin-top:6px;font-size:11px">Show stale: <label style="margin-left:6px"><input id="mgw_show_stale" type="checkbox"> include</label></div>' +
+           '<div id="mgw_doc_count" style="margin-top:6px;font-size:11px"></div>';
         document.body.appendChild(debugEl);
 
         function setDebug(msg){
@@ -144,6 +146,10 @@
           var col = firestore.collection('locations');
           // listen to all docs in the collection and react to changes
           col.onSnapshot(function(snapshot){
+            // update doc count in debug UI
+            try{ if(!docCountEl) docCountEl = document.getElementById('mgw_doc_count'); if(docCountEl) docCountEl.textContent = 'docs: ' + snapshot.size; }catch(e){}
+            // read checkbox state
+            try{ var cb = document.getElementById('mgw_show_stale'); includeStale = cb && cb.checked; }catch(e){}
             snapshot.docChanges().forEach(function(change){
               var id = change.doc.id;
               var data = change.doc.data();
@@ -152,7 +158,7 @@
               var age = Date.now() - dataTs;
               if(change.type === 'added' || change.type === 'modified'){
                 // ignore stale docs (this prevents showing old users on initial load)
-                if(age > docFreshThreshold){
+                if(!includeStale && age > docFreshThreshold){
                   // treat as absent; if it was previously shown, remove it
                   if(userMarkers[id]){ map.removeLayer(userMarkers[id].marker); delete userMarkers[id]; updateOnlineCount(); }
                   return;
