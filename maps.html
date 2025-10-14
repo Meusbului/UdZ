@@ -38,7 +38,7 @@
   <!-- Firebase (compat) - paste your config into firebaseConfig below -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function(){
         // Center roughly where the previous bbox was (lat, lon)
@@ -63,17 +63,16 @@
 
         // --- Realtime users (Firebase) -------------------------
         // NOTE: Replace the firebaseConfig object below with your project's values.
-        var firebaseConfig = {
+    var firebaseConfig = {
           apiKey: "--YOUR_API_KEY--",
           authDomain: "--YOUR_AUTH_DOMAIN--",
-          databaseURL: "--YOUR_DATABASE_URL--",
           projectId: "--YOUR_PROJECT_ID--",
           storageBucket: "--YOUR_STORAGE_BUCKET--",
           messagingSenderId: "--YOUR_MESSAGING_SENDER_ID--",
           appId: "--YOUR_APP_ID--"
         };
   var firebaseInitialized = false;
-  var dbRoot = null;
+  var firestore = null;
   var clientId = localStorage.getItem('mgw_clientId') || null; // will prefer auth.uid once signed in
         var displayName = localStorage.getItem('mgw_name') || '';
         var userMarkers = {}; // markers keyed by clientId
@@ -86,17 +85,17 @@
           if(firebaseInitialized) return;
           try{
             firebase.initializeApp(firebaseConfig);
-            // sign in anonymously, then hook DB listeners
+            // sign in anonymously, then hook Firestore listeners
             firebase.auth().signInAnonymously().then(function(userCred){
               clientId = userCred && userCred.user ? userCred.user.uid : clientId;
               if(clientId) localStorage.setItem('mgw_clientId', clientId);
-              dbRoot = firebase.database();
+              firestore = firebase.firestore();
               listenForLocations();
               firebaseInitialized = true;
             }).catch(function(err){
               console.warn('Anonymous auth failed:', err);
-              // fallback: initialize DB listener without auth (may be rejected by rules)
-              try{ dbRoot = firebase.database(); listenForLocations(); firebaseInitialized = true; }catch(e){}
+              // fallback: initialize Firestore without auth (may be rejected by rules)
+              try{ firestore = firebase.firestore(); listenForLocations(); firebaseInitialized = true; }catch(e){}
             });
           }catch(e){
             console.warn('Firebase init failed', e);
@@ -105,25 +104,35 @@
 
         function publishLocation(lat, lon, acc){
           if(!firebaseInitialized) initFirebase();
-          if(!dbRoot || !clientId) return; // wait for auth
-          var ref = dbRoot.ref('locations/' + clientId);
+          if(!firestore || !clientId) return; // wait for auth
+          var docRef = firestore.collection('locations').doc(clientId);
           var payload = { id: clientId, name: displayName || null, lat: lat, lon: lon, acc: acc||0, ts: Date.now() };
-          ref.set(payload).catch(function(e){ console.warn('publish failed', e); });
+          docRef.set(payload).catch(function(e){ console.warn('publish failed', e); });
         }
 
         function removeMyLocation(){
-          if(!firebaseInitialized || !dbRoot || !clientId) return;
-          try{ dbRoot.ref('locations/' + clientId).remove(); }catch(e){}
+          if(!firebaseInitialized || !firestore || !clientId) return;
+          try{ firestore.collection('locations').doc(clientId).delete().catch(function(){}); }catch(e){}
         }
 
         function listenForLocations(){
-          if(!dbRoot) return;
-          var ref = dbRoot.ref('locations');
-          ref.on('child_added', onChild);
-          ref.on('child_changed', onChild);
-          ref.on('child_removed', function(snap){ var id = snap.key; if(userMarkers[id]){ map.removeLayer(userMarkers[id].marker); delete userMarkers[id]; updateOnlineCount(); } });
+          if(!firestore) return;
+          var col = firestore.collection('locations');
+          // listen to all docs in the collection and react to changes
+          col.onSnapshot(function(snapshot){
+            snapshot.docChanges().forEach(function(change){
+              var id = change.doc.id;
+              var data = change.doc.data();
+              if(change.type === 'added' || change.type === 'modified'){
+                // reuse onChild shape
+                onChild({ key: id, val: function(){ return data; } });
+              }else if(change.type === 'removed'){
+                if(userMarkers[id]){ map.removeLayer(userMarkers[id].marker); delete userMarkers[id]; updateOnlineCount(); }
+              }
+            });
+          }, function(err){ console.warn('Firestore listen error', err); });
 
-          // also prune stale markers locally every 15s
+          // also prune stale markers locally every 15s (same as before)
           setInterval(function(){
             var now = Date.now();
             Object.keys(userMarkers).forEach(function(id){
