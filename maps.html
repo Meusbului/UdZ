@@ -77,6 +77,10 @@
   var clientId = localStorage.getItem('mgw_clientId') || null; // will prefer auth.uid once signed in
         var displayName = localStorage.getItem('mgw_name') || '';
         var userMarkers = {}; // markers keyed by clientId
+  // shared canvas renderer and pending update queue for better performance with many markers
+  var markerRenderer = L.canvas({ padding: 0.5 });
+  var pendingUpdates = {};
+  var flushScheduled = false;
         var onlineCountEl = document.createElement('div');
         onlineCountEl.style.cssText = 'position:fixed;left:12px;bottom:16px;z-index:9999;color:#fff;background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:8px;font-size:13px';
         onlineCountEl.textContent = '';
@@ -140,8 +144,9 @@
               var id = change.doc.id;
               var data = change.doc.data();
               if(change.type === 'added' || change.type === 'modified'){
-                // reuse onChild shape
-                onChild({ key: id, val: function(){ return data; } });
+                // batch updates to avoid many synchronous DOM/SVG operations
+                pendingUpdates[id] = { latlng: [data.lat, data.lon], ts: data.ts || Date.now(), data: data };
+                if(!flushScheduled){ flushScheduled = true; requestAnimationFrame(flushPending); }
               }else if(change.type === 'removed'){
                 if(userMarkers[id]){ map.removeLayer(userMarkers[id].marker); delete userMarkers[id]; updateOnlineCount(); }
               }
@@ -174,10 +179,30 @@
             userMarkers[id].marker.setLatLng(latlng);
           }else{
             // create a small dot marker
-            var opts = { radius: 6, color: isSelf ? '#fff' : '#ffb07a', fillColor: isSelf ? '#ff6a00' : '#ff6a00', fillOpacity: isSelf ? 0.9 : 0.9, weight: isSelf ? 2 : 1 };
+            var opts = { renderer: markerRenderer, radius: 6, color: isSelf ? '#fff' : '#ffb07a', fillColor: isSelf ? '#ff6a00' : '#ff6a00', fillOpacity: isSelf ? 0.9 : 0.9, weight: isSelf ? 2 : 1 };
             var m = L.circleMarker(latlng, opts).addTo(map);
             userMarkers[id] = { marker: m, ts: data.ts || Date.now(), id: id };
           }
+          updateOnlineCount();
+        }
+
+        // Apply pending updates batched via requestAnimationFrame
+        function flushPending(){
+          Object.keys(pendingUpdates).forEach(function(id){
+            var u = pendingUpdates[id];
+            if(!u) return;
+            if(userMarkers[id]){
+              userMarkers[id].ts = u.ts;
+              userMarkers[id].marker.setLatLng(u.latlng);
+            }else{
+              var isSelf = id === clientId;
+              var opts = { renderer: markerRenderer, radius: 6, color: isSelf ? '#fff' : '#ffb07a', fillColor: isSelf ? '#ff6a00' : '#ff6a00', fillOpacity: isSelf ? 0.9 : 0.9, weight: isSelf ? 2 : 1 };
+              var m = L.circleMarker(u.latlng, opts).addTo(map);
+              userMarkers[id] = { marker: m, ts: u.ts || Date.now(), id: id };
+            }
+          });
+          pendingUpdates = {};
+          flushScheduled = false;
           updateOnlineCount();
         }
 
