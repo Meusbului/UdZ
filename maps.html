@@ -39,6 +39,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script>
       document.addEventListener('DOMContentLoaded', function(){
         // Center roughly where the previous bbox was (lat, lon)
@@ -74,6 +75,7 @@
         };
   var firebaseInitialized = false;
   var firestore = null;
+  var dbRealtime = null;
   var clientId = localStorage.getItem('mgw_clientId') || null; // will prefer auth.uid once signed in
         var displayName = localStorage.getItem('mgw_name') || '';
         var userMarkers = {}; // markers keyed by clientId
@@ -82,6 +84,8 @@
   var pendingUpdates = {};
   var flushScheduled = false;
   var docFreshThreshold = 45000; // ignore docs older than 45s on initial load
+  var presenceRef = null;
+  var lastKnownPosition = null;
         var onlineCountEl = document.createElement('div');
         onlineCountEl.style.cssText = 'position:fixed;left:12px;bottom:16px;z-index:9999;color:#fff;background:rgba(0,0,0,0.45);padding:6px 10px;border-radius:8px;font-size:13px';
         onlineCountEl.textContent = '';
@@ -103,6 +107,9 @@
               if(clientId) localStorage.setItem('mgw_clientId', clientId);
               setDebug('signed in: ' + clientId);
               firestore = firebase.firestore();
+              try{ dbRealtime = firebase.database(); }catch(e){ dbRealtime = null; }
+              // init presence if DB available
+              try{ initPresence(); }catch(e){}
               listenForLocations();
               firebaseInitialized = true;
             }).catch(function(err){
@@ -185,7 +192,12 @@
           }
           window.addEventListener('pagehide', tryRemoveOnExit);
           window.addEventListener('beforeunload', tryRemoveOnExit);
-          document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') tryRemoveOnExit(); });
+          // when the page becomes visible again, re-publish presence if we have a last known position
+          document.addEventListener('visibilitychange', function(){
+            if(document.visibilityState === 'visible'){
+              if(lastKnownPosition){ publishPresence(lastKnownPosition.lat, lastKnownPosition.lon, lastKnownPosition.acc); }
+            }
+          });
         }
 
         function onChild(snap){
@@ -313,12 +325,34 @@
                 if(d >= movementThresholdMeters) shouldPublish = true;
               }
               if(shouldPublish && ((now - lastPublish) > publishThrottle)){
-                publishLocation(lat, lon, acc); lastPublish = now; lastPublishedLatLng = [lat, lon];
+                publishLocation(lat, lon, acc); publishPresence(lat, lon, acc); lastPublish = now; lastPublishedLatLng = [lat, lon];
               }
             }catch(e){}
           }, function(err){
             // map common error codes
             if(err && err.code === 1){
+
+          function initPresence(){
+            if(!dbRealtime || !clientId) return;
+            try{
+              presenceRef = dbRealtime.ref('presence/' + clientId);
+              // ensure the server removes our node if our socket disconnects
+              presenceRef.onDisconnect().remove();
+            }catch(e){ presenceRef = null; }
+          }
+
+          function publishPresence(lat, lon, acc){
+            if(!presenceRef) initPresence();
+            if(!presenceRef) return;
+            try{
+              var payload = { id: clientId, lat: lat, lon: lon, acc: acc||0, ts: Date.now() };
+              presenceRef.set(payload).catch(function(){});
+            }catch(e){}
+          }
+
+          function removePresence(){
+            try{ if(presenceRef) presenceRef.remove().catch(function(){}); }catch(e){}
+          }
               statusEl.textContent = 'Permission denied. Open this page in Safari and allow location.';
             }else if(err && err.code === 3){
               statusEl.textContent = 'Location request timed out.';
@@ -340,6 +374,7 @@
           if(map && map._userCentered){ delete map._userCentered; }
           // remove from realtime backend when stopping
           try{ removeMyLocation(); }catch(e){}
+          try{ removePresence(); }catch(e){}
           statusEl.textContent = 'Location stopped';
           locateBtn.textContent = 'Locate';
         }
