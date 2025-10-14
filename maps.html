@@ -126,7 +126,10 @@
           if(!firebaseInitialized) initFirebase();
           if(!firestore || !clientId) return; // wait for auth
           var docRef = firestore.collection('locations').doc(clientId);
-          var payload = { id: clientId, name: displayName || null, lat: lat, lon: lon, acc: acc||0, ts: Date.now() };
+          // include an expiresAt timestamp so Firestore TTL (if enabled) will remove inactive docs
+          var expiresMs = Date.now() + 60000; // expire ~60s from publish
+          var expiresTs = (firebase && firebase.firestore && firebase.firestore.Timestamp) ? firebase.firestore.Timestamp.fromMillis(expiresMs) : null;
+          var payload = { id: clientId, name: displayName || null, lat: lat, lon: lon, acc: acc||0, ts: Date.now(), expiresAt: expiresTs };
           docRef.set(payload).then(function(){ setDebug('published at ' + new Date().toLocaleTimeString()); }).catch(function(e){ console.warn('publish failed', e); setDebug('publish error: ' + (e && e.message)); });
         }
 
@@ -153,18 +156,26 @@
             });
           }, function(err){ console.warn('Firestore listen error', err); setDebug('listen error: ' + (err && err.message)); });
 
-          // also prune stale markers locally every 15s (same as before)
+          // also prune stale markers locally every 15s (shorter threshold)
           setInterval(function(){
             var now = Date.now();
             Object.keys(userMarkers).forEach(function(id){
               var info = userMarkers[id];
-              if(info && info.ts && (now - info.ts) > 45000){ // 45s stale
+              if(info && info.ts && (now - info.ts) > 30000){ // 30s stale
                 if(info.marker) map.removeLayer(info.marker);
                 delete userMarkers[id];
                 updateOnlineCount();
               }
             });
           }, 15000);
+
+          // Attempt to remove my location when user navigates away or hides the page
+          function tryRemoveOnExit(){
+            try{ removeMyLocation(); }catch(e){}
+          }
+          window.addEventListener('pagehide', tryRemoveOnExit);
+          window.addEventListener('beforeunload', tryRemoveOnExit);
+          document.addEventListener('visibilitychange', function(){ if(document.visibilityState === 'hidden') tryRemoveOnExit(); });
         }
 
         function onChild(snap){
