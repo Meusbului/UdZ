@@ -192,6 +192,10 @@
             var u = pendingUpdates[id];
             if(!u) return;
             if(userMarkers[id]){
+              // skip very tiny movements to avoid jitter
+              var cur = userMarkers[id].marker.getLatLng();
+              var moved = haversineDistanceMeters(cur.lat, cur.lng, u.latlng[0], u.latlng[1]);
+              if(moved < 1) return; // ignore sub-meter differences
               userMarkers[id].ts = u.ts;
               userMarkers[id].marker.setLatLng(u.latlng);
             }else{
@@ -204,6 +208,17 @@
           pendingUpdates = {};
           flushScheduled = false;
           updateOnlineCount();
+        }
+
+        // Haversine distance in meters
+        function haversineDistanceMeters(lat1, lon1, lat2, lon2){
+          function toRad(x){ return x * Math.PI / 180; }
+          var R = 6371000; // meters
+          var dLat = toRad(lat2-lat1);
+          var dLon = toRad(lon2-lon1);
+          var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(toRad(lat1))*Math.cos(toRad(lat2)) * Math.sin(dLon/2)*Math.sin(dLon/2);
+          var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+          return R * c;
         }
 
         function updateOnlineCount(){
@@ -242,6 +257,9 @@
           statusEl.textContent = 'Requesting location...';
           // request watchPosition on user gesture
           var lastPublish = 0;
+          var publishThrottle = 3500; // ms between publishes
+          var lastPublishedLatLng = null;
+          var movementThresholdMeters = 10; // only publish if moved > 10 meters
           watchId = navigator.geolocation.watchPosition(function(pos){
             var lat = pos.coords.latitude;
             var lon = pos.coords.longitude;
@@ -264,10 +282,18 @@
             setTimeout(()=>{ statusEl.style.background = 'rgba(0,0,0,0.6)'; }, 900);
             // pan map to user on first fix
             if(map && !map._userCentered){ map.setView([lat,lon], 16); map._userCentered = true; }
-            // publish to realtime backend (throttle to 2s)
+            // publish to backend with throttle + movement threshold
             try{
               var now = Date.now();
-              if((now - lastPublish) > 1800){ publishLocation(lat, lon, acc); lastPublish = now; }
+              var shouldPublish = false;
+              if(!lastPublishedLatLng) shouldPublish = true;
+              else {
+                var d = haversineDistanceMeters(lastPublishedLatLng[0], lastPublishedLatLng[1], lat, lon);
+                if(d >= movementThresholdMeters) shouldPublish = true;
+              }
+              if(shouldPublish && ((now - lastPublish) > publishThrottle)){
+                publishLocation(lat, lon, acc); lastPublish = now; lastPublishedLatLng = [lat, lon];
+              }
             }catch(e){}
           }, function(err){
             // map common error codes
