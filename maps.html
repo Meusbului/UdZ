@@ -87,15 +87,7 @@
         onlineCountEl.textContent = '';
         document.body.appendChild(onlineCountEl);
 
-        // Debug overlay to surface auth/errors for troubleshooting
-        var debugEl = document.createElement('div');
-        debugEl.style.cssText = 'position:fixed;left:12px;bottom:72px;z-index:9999;color:#fff;background:rgba(0,0,0,0.6);padding:8px 10px;border-radius:8px;font-size:12px;max-width:320px;line-height:1.2';
-  debugEl.id = 'mgw_debug';
-  debugEl.innerHTML = '<strong>Debug:</strong><div id="mgw_debug_state">init</div>' +
-           '<div style="margin-top:6px;font-size:11px">Show stale: <label style="margin-left:6px"><input id="mgw_show_stale" type="checkbox"> include</label></div>' +
-           '<div id="mgw_doc_count" style="margin-top:6px;font-size:11px"></div>' +
-           '<div style="margin-top:8px"><button id="mgw_dump_docs" style="font-size:11px;padding:6px 8px;border-radius:6px">Dump docs</button><pre id="mgw_dump" style="max-height:160px;overflow:auto;margin-top:6px;background:rgba(0,0,0,0.2);padding:6px;border-radius:6px;font-size:11px"></pre></div>';
-        document.body.appendChild(debugEl);
+    // debug UI removed - setDebug will log to console when available
 
         function setDebug(msg){
           try{ document.getElementById('mgw_debug_state').textContent = String(msg); }catch(e){ console.log('dbg', msg); }
@@ -124,21 +116,7 @@
           }catch(e){
             console.warn('Firebase init failed', e);
           }
-          // wire dump button if present
-          setTimeout(function(){
-            try{
-              var btn = document.getElementById('mgw_dump_docs');
-              if(btn){ btn.addEventListener('click', function(){
-                if(!firestore) return setDebug('no firestore');
-                firestore.collection('locations').get().then(function(q){
-                  var out = [];
-                  q.forEach(function(doc){ var d = doc.data(); var ts = d && d.ts ? (d.ts.toMillis ? d.ts.toMillis() : d.ts) : 0; out.push(doc.id + ' -> ' + new Date(ts).toISOString()); });
-                  var pre = document.getElementById('mgw_dump'); if(pre) pre.textContent = out.join('\n');
-                  console.log('dump', out); setDebug('dumped ' + out.length + ' docs');
-                }).catch(function(e){ console.warn('dump failed', e); setDebug('dump failed'); });
-              }); }
-            }catch(e){}
-          }, 500);
+          // no debug wiring
         }
 
         function publishLocation(lat, lon, acc){
