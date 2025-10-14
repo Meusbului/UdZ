@@ -93,7 +93,8 @@
   debugEl.id = 'mgw_debug';
   debugEl.innerHTML = '<strong>Debug:</strong><div id="mgw_debug_state">init</div>' +
            '<div style="margin-top:6px;font-size:11px">Show stale: <label style="margin-left:6px"><input id="mgw_show_stale" type="checkbox"> include</label></div>' +
-           '<div id="mgw_doc_count" style="margin-top:6px;font-size:11px"></div>';
+           '<div id="mgw_doc_count" style="margin-top:6px;font-size:11px"></div>' +
+           '<div style="margin-top:8px"><button id="mgw_dump_docs" style="font-size:11px;padding:6px 8px;border-radius:6px">Dump docs</button><pre id="mgw_dump" style="max-height:160px;overflow:auto;margin-top:6px;background:rgba(0,0,0,0.2);padding:6px;border-radius:6px;font-size:11px"></pre></div>';
         document.body.appendChild(debugEl);
 
         function setDebug(msg){
@@ -123,6 +124,21 @@
           }catch(e){
             console.warn('Firebase init failed', e);
           }
+          // wire dump button if present
+          setTimeout(function(){
+            try{
+              var btn = document.getElementById('mgw_dump_docs');
+              if(btn){ btn.addEventListener('click', function(){
+                if(!firestore) return setDebug('no firestore');
+                firestore.collection('locations').get().then(function(q){
+                  var out = [];
+                  q.forEach(function(doc){ var d = doc.data(); var ts = d && d.ts ? (d.ts.toMillis ? d.ts.toMillis() : d.ts) : 0; out.push(doc.id + ' -> ' + new Date(ts).toISOString()); });
+                  var pre = document.getElementById('mgw_dump'); if(pre) pre.textContent = out.join('\n');
+                  console.log('dump', out); setDebug('dumped ' + out.length + ' docs');
+                }).catch(function(e){ console.warn('dump failed', e); setDebug('dump failed'); });
+              }); }
+            }catch(e){}
+          }, 500);
         }
 
         function publishLocation(lat, lon, acc){
