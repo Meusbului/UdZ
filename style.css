@@ -51,7 +51,7 @@ body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
 /* Make the header badge clickable and keyboard-focusable */
 .header-badge-link{display:inline-flex;align-items:center;line-height:0;margin-left:auto;cursor:pointer;z-index:10}
 .header-badge-link:focus{outline:3px solid rgba(255,106,0,0.25);outline-offset:3px;border-radius:8px}
-.header-badge-link .badge.placeholder-orange{display:block;box-shadow:0 2px 6px rgba(0,0,0,0.45);border:2px solid rgba(0,0,0,0.35);background-color:var(--accent);background-image:url('GW_cube_orange_PNG_5253.png');background-size:cover;background-position:center;background-repeat:no-repeat}
+.header-badge-link .badge.placeholder-orange{display:block;box-shadow:none;border:2px solid rgba(0,0,0,0.12);background-color:var(--accent);background-image:url('GW_cube_orange_PNG_5253.png');background-size:cover;background-position:center;background-repeat:no-repeat}
 
 /* Title bar (dark strip) */
 .title-bar{background:#333;margin:6px auto 12px;padding:10px var(--gutter);font-weight:800;width:var(--container-size);border-radius:8px;overflow:hidden}
@@ -158,3 +158,25 @@ body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
 
 /* Hide Leaflet attribution (tile providers often require attribution; consider moving it to the header) */
 .leaflet-control-attribution{display:none !important}
+
+.documents-screen{background:var(--bg);padding:var(--gutter) 0}
+.documents-container{width:var(--container-size);margin:12px auto;padding:0}
+.documents-card{width:var(--container-size);margin:12px auto;background:var(--panel);border-radius:16px;overflow:hidden;padding:0;box-sizing:border-box}
+/* Header is an orange strip (inside the orange frame) with large italic title and folder icon */
+.documents-header{display:flex;align-items:center;padding:16px var(--gutter);background:var(--accent);border-radius:12px 12px 0 0}
+.documents-title{font-size:28px;font-weight:800;color:#fff;padding-left:8px;line-height:1;font-style:normal;flex:1}
+.documents-icon{width:64px;height:56px;display:flex;align-items:center;justify-content:center;margin-left:12px}
+.documents-icon img.documents-icon-img{width:44px;height:44px;object-fit:contain;filter:none;display:block}
+.documents-icon-img{width:44px;height:44px;display:block}
+/* inline folder icon next to title */
+.documents-title .documents-icon-img.inline{width:34px;height:34px;margin-left:12px;vertical-align:middle}
+.documents-title-text{vertical-align:middle}
+/* inner dark panel that holds the orange pills */
+.documents-menu-wrap{background:var(--card);padding:var(--gutter) 10px;display:flex;flex-direction:column;gap:12px;border-radius:0 0 12px 12px}
+.documents-menu-wrap .menu-item{background:var(--accent);color:#fff;padding:12px 16px;border-radius:10px;font-weight:800;font-size:16px;text-align:left;text-decoration:none;border:0;box-shadow:none}
+.doc-item{background:var(--accent);border:0;padding:12px 16px;border-radius:10px;color:#fff;font-weight:800;text-align:left;font-size:16px;box-shadow:none;cursor:pointer}
+.doc-item:active{transform:none}
+
+@media (min-width:640px){
+  .documents-container{margin-top:28px}
+}
