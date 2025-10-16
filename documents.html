@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <div class="screen">
+  <div class="screen documents-screen">
     <header class="top">
       <div class="top-inner">
         <div class="brand">
@@ -20,14 +20,25 @@
             </a>
           </div>
         </div>
-  <a href="index.html" class="header-badge-link" aria-label="Back to home"><span class="badge placeholder-orange" aria-hidden="true"></span></a>
+        <a href="index.html" class="header-badge-link" aria-label="Back to home"><span class="badge placeholder-orange" aria-hidden="true"></span></a>
       </div>
     </header>
-  <div class="title-bar"><span class="step">1.</span> Scan QR-Code</div>
+
     <main class="main">
-      <div style="width:var(--container-size);margin:18px auto;">
-        <h2>Documents</h2>
-    <p>This is a placeholder for the Documents page.</p>
+      <div class="documents-container">
+        <div class="documents-card">
+          <div class="documents-header">
+            <div class="documents-title">Documents</div>
+            <div class="documents-icon" aria-hidden="true">📁</div>
+          </div>
+
+          <div class="documents-list">
+            <button class="doc-item">Doc 1</button>
+            <button class="doc-item">Doc 2</button>
+            <button class="doc-item">Doc 3</button>
+            <button class="doc-item">Doc 4</button>
+          </div>
+        </div>
       </div>
     </main>
   </div>
