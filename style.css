@@ -161,7 +161,7 @@ body{margin:0;background:var(--bg);color:#fff;overflow-x:hidden}
 
 .documents-screen{background:var(--bg);padding:var(--gutter) 0}
 .documents-container{width:var(--container-size);margin:12px auto;padding:0}
-.documents-card{background:var(--accent);border-radius:16px;overflow:visible;padding:0}
+.documents-card{width:var(--container-size);margin:12px auto;background:var(--accent);border-radius:16px;overflow:hidden;padding:0;box-sizing:border-box}
 /* Header is an orange strip (inside the orange frame) with large italic title and folder icon */
 .documents-header{display:flex;align-items:center;justify-content:space-between;padding:18px var(--gutter);background:var(--accent);border-radius:12px 12px 0 0}
 .documents-title{font-size:28px;font-weight:800;color:#fff;padding-left:8px;line-height:1;font-style:italic}
