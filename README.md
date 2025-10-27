@@ -1,4 +1,4 @@
-myGW — mobile QR scanner & live map
+goGW — mobile QR scanner & live map
 
 This repository is a small static web app that provides:
 - A mobile-styled QR scanner UI (camera -> jsQR decoding pipeline).
